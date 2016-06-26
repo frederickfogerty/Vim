@@ -1,5 +1,6 @@
 "use strict";
 
+import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as _ from 'lodash';
 
@@ -17,7 +18,7 @@ import {
 import { Configuration } from '../configuration/configuration';
 import { Position } from './../motion/position';
 import { RegisterMode } from './../register/register';
-import { showCmdLine } from '../../src/cmd_line/main';
+import { showCmdLine, runFileCommands } from '../../src/cmd_line/main';
 
 export enum VimSpecialCommands {
     Nothing,
@@ -331,12 +332,16 @@ export class ModeHandler implements vscode.Disposable {
     }
 
     /**
-     * isTesting does not affect functionality, but speeds up tests drastically.
+     * Effectively the VSCodeVim entry point.
+     *
+     * *isTesting* does not affect functionality, but speeds up tests drastically.
      */
     constructor(isTesting = true) {
         ModeHandler.IsTesting = isTesting;
 
         this._configuration = Configuration.fromUserFile();
+
+        this._readVimrc();
 
         this._vimState = new VimState();
         this._modes = [
@@ -420,6 +425,22 @@ export class ModeHandler implements vscode.Disposable {
                 await this.updateView(this._vimState, false);
             }
         });
+    }
+
+    private _readVimrc(): void {
+        let fileName: string;
+        let fileContents: string[];
+
+        try {
+            fileName = vscode.workspace.getConfiguration('vim').get<string>("vimrc");
+            fileContents = fs.readFileSync(fileName, "utf8").split("\n");
+        } catch (e) {
+            vscode.window.showErrorMessage(`Could not find vimrc file ${ fileName }. Try using an exact path (no tilde, etc.).`);
+
+            return;
+       }
+
+       runFileCommands(fileContents, this);
     }
 
     /**

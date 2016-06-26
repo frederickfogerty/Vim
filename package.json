@@ -57,6 +57,11 @@
             "title": "Vim Configuration",
             "type": "object",
             "properties": {
+                "vim.vimrc": {
+                    "type": "string",
+                    "description": "Path to your .vimrc file. Currently only some commands are supported. See README for more information."
+                },
+
                 "vim.keyboardLayout": {
                     "default": "en-US (QWERTY)",
                     "type": "string",

@@ -1,5 +1,4 @@
 import { VimSpecialCommands, VimState, SearchState } from './../mode/modeHandler';
-import { showCmdLine } from '../../src/cmd_line/main';
 import { ModeName } from './../mode/mode';
 import { TextEditor } from './../textEditor';
 import { Register, RegisterMode } from './../register/register';
@@ -121,6 +120,45 @@ export class BaseAction {
     return this.keys.join("");
   }
 }
+
+interface IBaseAction {
+  isMotion: boolean = false;
+
+  modes: ModeName[];
+
+  /**
+   * The sequence of keys you use to trigger the action.
+   */
+  keys: string[];
+
+  mustBeFirstKey: boolean;
+
+  /**
+   * The keys pressed at the time that this action was triggered.
+   */
+  keysPressed: string[] = [];
+}
+
+interface IBaseMovement implements IBaseAction {
+  /**
+   * Whether we should change desiredColumn in VimState.
+   */
+  doesntChangeDesiredColumn: boolean = false;
+
+  /**
+   * This is for commands like $ which force the desired column to be at
+   * the end of even the longest line.
+   */
+  setsDesiredColumnToEOL: boolean = false;
+
+  execAction(position: Position, vimState: VimState): Promise<Position>;
+
+  execActionForOperator(position: Position, vimState: VimState): Promise<Position>;
+
+  execActionWithCount(position: Position, vimState: VimState, count: number): Promise<Position | IMovement>;
+};
+
+
 
 /**
  * A movement is something like 'h', 'k', 'w', 'b', 'gg', etc.
@@ -286,10 +324,8 @@ export function RegisterAction(action: typeof BaseAction): void {
 }
 
 
-
-
-
 // begin actions
+
 
 
 
@@ -392,6 +428,11 @@ class CommandInsertInSearchMode extends BaseCommand {
 
     return vimState;
   }
+}
+
+const CommandNextSearchMatch2: IBaseMovement = {
+  modes = [ModeName.Normal, ModeName.Visual, ModeName.VisualLine];
+  keys = ["n"];
 }
 
 @RegisterAction
@@ -839,7 +880,7 @@ class CommandFold extends BaseCommand {
   keys = ["z", "c"];
 
   public async exec(position: Position, vimState: VimState): Promise<VimState> {
-    await vscode.commands.executeCommand("editor.fold")
+    await vscode.commands.executeCommand("editor.fold");
 
     return vimState;
   }
@@ -1936,4 +1977,9 @@ class ToggleCaseAndMoveForward extends BaseMovement {
 
     return position.getRight();
   }
+}
+
+@RegisterAction
+class KeyRewriterCommand extends BaseCommand {
+  modes = [ModeName]
 }
